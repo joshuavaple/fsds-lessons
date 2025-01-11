@@ -1,7 +1,7 @@
 In this example, we have two services: web and app. Both services are connected to a custom network named mynetwork.
 
 ```docker compose
-version: '3.8'
+name: compose-network
 
 services:
   myweb:
@@ -21,9 +21,18 @@ networks:
   mynetwork:
     driver: bridge
 ```
-The command: sleep 600 line in the Docker Compose file specifies the command to be run inside the container when it starts: to sleep for 600 seconds (10 min). This effectively keeps the container running for 10 min without doing anything else. This can be useful for testing purposes or to keep the container alive without exiting while you perform other actions, such as testing network communication.
+- The command: sleep 600 line in the Docker Compose file specifies the command to be run inside the container when it starts: to sleep for 600 seconds (10 min). This can be useful to keep the container alive without exiting while you perform other actions, such as testing network communication.
 
-The driver: bridge in the Docker Compose file specifies the type of network driver to use for the custom network mynetwork. The bridge driver is the default network driver in Docker. It creates a private internal network on the host where containers can communicate with each other. Containers connected to the same bridge network can communicate with each other using their container names as hostnames.
+- The driver: bridge in the Docker Compose file specifies the type of network driver to use for the custom network mynetwork. The bridge driver is the default network driver in Docker. It creates a private internal network on the host where containers can communicate with each other. Containers connected to the same bridge network can communicate with each other using their container names as hostnames.
+
+
+- ports: 8080:80 means that port 8080 on the host machine is mapped to port 80 inside the container.
+When you access http://localhost:8080 on the host machine, the request is forwarded to port 80 inside the myweb container, where the nginx server is listening.
+
+- How to Use Host and Container Ports
+  - Accessing the Service from the Host Machine: You can access the nginx server running inside the myweb container by navigating to http://localhost:8080 in your web browser or using a tool like curl or wget.
+  - Accessing the Service from Another Container: Containers on the same network can communicate with each other using their service names and container ports. For example, if myapp wants to access myweb, it can use http://myweb:80. However, Docker Compose's networking features provide built-in service discovery, allowing services to locate each other through service names without the internal port, and using 80 here is not required. 
+  - more info: https://www.warp.dev/terminus/docker-compose-port-mapping
 
 
 1. To start the services in detached mode, run
@@ -48,7 +57,39 @@ The driver: bridge in the Docker Compose file specifies the type of network driv
     docker compose exec myapp sh -c "<your command here>"
     ```
 
-5. In the other `compose.wrong.yml` file below, `myapp2` is not in the same network as `myweb`. Hence when executing `nslookup myweb` command inside it, the following message shows that `myweb` cannot be found.
+In the other `compose.wrong.yml` file below (note that we use another host port as 8080 is being used by the other stack) 
+```docker compose
+name: compose-network-wrong
+
+services:
+  myweb:
+    image: nginx:alpine
+    networks:
+      - mynetwork
+    ports:
+      - "5000:80"
+
+  myapp:
+    image: busybox
+    command: sleep 600
+    networks:
+      - mynetwork
+  
+  myapp2:
+    image: busybox
+    command: sleep 600
+    networks:
+      - mynetwork2
+
+networks:
+  mynetwork:
+    driver: bridge
+  mynetwork2:
+    driver: bridge
+```
+
+
+1. `myapp2` is not in the same network as `myweb`. Hence when executing `nslookup myweb` command inside it, the following message shows that `myweb` cannot be found.
 
     ```
     Server:         127.0.0.11
@@ -59,7 +100,7 @@ The driver: bridge in the Docker Compose file specifies the type of network driv
     ** server can't find myweb: NXDOMAIN
     ```
 
-When executing the same command in `myapp`, which is inside the same network as `myweb`, the web app can be found.
+2. When executing the same command in `myapp`, which is inside the same network as `myweb`, the web app can be found.
     ```
     Server:         127.0.0.11
     Address:        127.0.0.11:53
