@@ -1,0 +1,27 @@
+name: compose-network-wrong
+
+services:
+  myweb:
+    image: nginx:alpine
+    networks:
+      - mynetwork
+    ports:
+      - "5000:80"
+
+  myapp:
+    image: busybox
+    command: sleep 600
+    networks:
+      - mynetwork
+  
+  myapp2:
+    image: busybox
+    command: sleep 600
+    networks:
+      - mynetwork2
+
+networks:
+  mynetwork:
+    driver: bridge
+  mynetwork2:
+    driver: bridge

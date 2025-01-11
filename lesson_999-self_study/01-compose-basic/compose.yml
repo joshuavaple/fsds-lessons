@@ -1,0 +1,18 @@
+# practice Docker Compose
+name: myapp
+
+services:
+  bar:
+    image: busybox
+    environment:
+      - VERSION=bar
+    command: echo "I'm running BAR version ${VERSION}"
+
+  foo:
+    image: busybox
+    depends_on: 
+      - bar # this ensures bar to run first before foo
+    command: |
+      /bin/sh -c 'echo "This is ${SERVICE_NAME}" && \
+      echo "Another command" && \
+      echo "Yet another command"'

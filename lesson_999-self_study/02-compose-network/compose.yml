@@ -1,0 +1,19 @@
+name: compose-network
+
+services:
+  myweb:
+    image: nginx:alpine
+    networks:
+      - mynetwork
+    ports:
+      - "8080:80"
+
+  myapp:
+    image: busybox
+    command: sleep 600
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
